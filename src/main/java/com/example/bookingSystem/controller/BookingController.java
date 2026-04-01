@@ -36,6 +36,11 @@ public class BookingController {
         return ResponseEntity.ok(bookingService.bookTickets(userId, request));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
+        return ResponseEntity.ok(bookingService.getBookingResponseById(id));
+    }
+
     @GetMapping("/me")
     public ResponseEntity<Map<String, Object>> getMyBookings(Authentication authentication) {
         Long userId = userRepository.findByEmail(authentication.getName())

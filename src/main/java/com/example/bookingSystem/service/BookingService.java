@@ -74,6 +74,13 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
+    public BookingResponse getBookingResponseById(Long id) {
+        return bookingRepository.findById(id)
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id " + id));
+    }
+
+    @Transactional(readOnly = true)
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAll().stream()
                 .map(this::toResponse)
