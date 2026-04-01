@@ -34,13 +34,10 @@ public class Booking {
     @Column(nullable = false)
     private String status;
 
-    @Column(nullable = false)
     private String customerName;
 
-    @Column(nullable = false)
     private String customerEmail;
 
-    @Column(nullable = false)
     private Integer numberOfTickets;
 
     private String stripePaymentIntentId;

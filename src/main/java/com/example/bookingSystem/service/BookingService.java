@@ -66,12 +66,14 @@ public class BookingService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getMyBookings(Long userId) {
         return bookingRepository.findByUserIdOrderByBookedAtDesc(userId).stream()
                 .map(this::toResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getAllBookings() {
         return bookingRepository.findAll().stream()
                 .map(this::toResponse)
@@ -110,6 +112,7 @@ public class BookingService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<BookingResponse> getRecentBookings() {
         return bookingRepository.findTop10ByOrderByBookedAtDesc().stream()
                 .map(this::toResponse)
@@ -128,6 +131,9 @@ public class BookingService {
                 .quantity(booking.getQuantity())
                 .totalPriceCents(booking.getTotalPriceCents())
                 .status(booking.getStatus())
+                .customerName(booking.getCustomerName())
+                .customerEmail(booking.getCustomerEmail())
+                .numberOfTickets(booking.getNumberOfTickets())
                 .stripePaymentIntentId(booking.getStripePaymentIntentId())
                 .bookedAt(booking.getBookedAt())
                 .cancelledAt(booking.getCancelledAt())

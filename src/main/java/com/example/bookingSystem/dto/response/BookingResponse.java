@@ -21,6 +21,9 @@ public class BookingResponse {
     private Integer quantity;
     private Integer totalPriceCents;
     private String status;
+    private String customerName;
+    private String customerEmail;
+    private Integer numberOfTickets;
     private String stripePaymentIntentId;
     private LocalDateTime bookedAt;
     private LocalDateTime cancelledAt;
