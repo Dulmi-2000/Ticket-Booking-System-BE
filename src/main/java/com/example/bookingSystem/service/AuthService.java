@@ -45,7 +45,11 @@ public class AuthService {
                 .build();
 
         User saved = userRepository.save(user);
-        String token = jwtUtils.generateToken(saved);
+        // Add extra claims for frontend compatibility
+        java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+        extraClaims.put("userId", saved.getId());
+        extraClaims.put("role", saved.getRole().name());
+        String token = jwtUtils.generateToken(extraClaims, saved);
 
         return JwtResponse.builder()
                 .token(token)
@@ -64,7 +68,11 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtUtils.generateToken(user);
+        // Add extra claims for frontend compatibility
+        java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
+        extraClaims.put("userId", user.getId());
+        extraClaims.put("role", user.getRole().name());
+        String token = jwtUtils.generateToken(extraClaims, user);
 
         return JwtResponse.builder()
                 .token(token)
