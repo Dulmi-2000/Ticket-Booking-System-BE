@@ -38,19 +38,34 @@ public class EventController {
         return ResponseEntity.ok(Map.of("events", events, "categories", categories));
     }
 
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<EventResponse>> getAllEventsAdmin() {
+        return ResponseEntity.ok(eventService.getAllEventsAdmin());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<EventResponse> getEventById(@PathVariable Long id) {
         return ResponseEntity.ok(eventService.getEventResponseById(id));
     }
 
     @GetMapping("/featured")
-    public ResponseEntity<Map<String, Object>> getFeaturedEvents() {
-        return ResponseEntity.ok(Map.of("events", eventService.getFeaturedEvents()));
+    public ResponseEntity<List<EventResponse>> getFeaturedEvents() {
+        return ResponseEntity.ok(eventService.getFeaturedEvents());
     }
 
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getCategories() {
         return ResponseEntity.ok(eventService.getCategories());
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<java.util.Map<String, Long>> getEventStats() {
+        return ResponseEntity.ok(java.util.Map.of(
+                "totalEvents", eventService.getEventsCount(),
+                "upcomingEvents", eventService.getUpcomingEventsCount()
+        ));
     }
 
     @PostMapping
