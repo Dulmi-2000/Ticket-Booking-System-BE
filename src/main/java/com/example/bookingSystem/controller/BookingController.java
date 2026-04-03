@@ -37,8 +37,14 @@ public class BookingController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.getBookingResponseById(id));
+    public ResponseEntity<BookingResponse> getBookingById(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+        return ResponseEntity.ok(bookingService.getBookingResponseById(id, userId));
     }
 
     @GetMapping("/me")
@@ -56,8 +62,25 @@ public class BookingController {
     }
 
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<BookingResponse> cancelBooking(@PathVariable Long id) {
-        return ResponseEntity.ok(bookingService.cancelBooking(id));
+    public ResponseEntity<BookingResponse> cancelBooking(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+        return ResponseEntity.ok(bookingService.cancelBooking(id, userId));
+    }
+
+    @GetMapping("/{id}/can-cancel")
+    public ResponseEntity<Map<String, Object>> canCancelBooking(
+            @PathVariable Long id,
+            Authentication authentication
+    ) {
+        Long userId = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"))
+                .getId();
+        return ResponseEntity.ok(Map.of("canCancel", bookingService.canCancelBooking(id, userId)));
     }
 
     @GetMapping("/stats")

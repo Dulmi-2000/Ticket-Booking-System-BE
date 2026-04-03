@@ -81,6 +81,15 @@ public class EventService {
         }
         event.setImageUrl(request.getImageUrl());
         event.setCategory(request.getCategory());
+        if (request.getIncludedItems() != null) {
+            event.setIncludedItems(request.getIncludedItems());
+        }
+        if (request.getCancellationPolicy() != null) {
+            event.setCancellationPolicy(request.getCancellationPolicy());
+        }
+        if (request.getRefundPolicy() != null) {
+            event.setRefundPolicy(request.getRefundPolicy());
+        }
         event.setIsFeatured(request.getIsFeatured() != null && request.getIsFeatured());
         return EventMapper.toResponse(eventRepository.save(event));
     }

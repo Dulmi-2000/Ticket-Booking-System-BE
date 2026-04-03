@@ -8,12 +8,15 @@ import com.example.bookingSystem.dto.response.UserResponse;
 import com.example.bookingSystem.model.entity.User;
 import com.example.bookingSystem.model.enums.Role;
 import com.example.bookingSystem.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -22,6 +25,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final AuthenticationManager authenticationManager;
+    @Value("${app.bootstrap.admin.email:admin@eventtickets.com}")
+    private String bootstrapAdminEmail;
+    @Value("${app.bootstrap.admin.password:admin123}")
+    private String bootstrapAdminPassword;
+    @Value("${app.bootstrap.admin.name:Admin User}")
+    private String bootstrapAdminName;
 
     public java.util.List<UserResponse> getAllUsers() {
         return userRepository.findAll().stream()
@@ -38,6 +47,14 @@ public class AuthService {
                 .build();
     }
 
+    /** Claims required by the Next.js app (cookie JWT must include role + userId). */
+    private Map<String, Object> userClaims(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", user.getId());
+        claims.put("role", user.getRole().name());
+        return claims;
+    }
+
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
@@ -52,14 +69,13 @@ public class AuthService {
 
     @PostConstruct
     public void initAdmin() {
-        String adminEmail = "admin@eventtickets.com";
-        Optional<User> adminOpt = userRepository.findByEmail(adminEmail);
+        Optional<User> adminOpt = userRepository.findByEmail(bootstrapAdminEmail);
         
         if (adminOpt.isEmpty()) {
             User admin = User.builder()
-                    .fullName("Admin User")
-                    .email(adminEmail)
-                    .password(passwordEncoder.encode("admin123"))
+                    .fullName(bootstrapAdminName)
+                    .email(bootstrapAdminEmail)
+                    .password(passwordEncoder.encode(bootstrapAdminPassword))
                     .role(Role.ADMIN)
                     .build();
             userRepository.save(admin);
@@ -73,7 +89,7 @@ public class AuthService {
             }
             // If the password doesn't start with $2a$ (BCrypt prefix), re-encode it
             if (!admin.getPassword().startsWith("$2a$")) {
-                admin.setPassword(passwordEncoder.encode("admin123"));
+                admin.setPassword(passwordEncoder.encode(bootstrapAdminPassword));
                 updated = true;
             }
             if (updated) {
@@ -113,11 +129,11 @@ public class AuthService {
 
     public JwtResponse login(LoginRequest request) {
         // Temporary "Magic Login" for Admin access to bypass DB credential issues
-        if ("admin@eventtickets.com".equals(request.getEmail()) && "admin123".equals(request.getPassword())) {
+        if (bootstrapAdminEmail.equals(request.getEmail()) && bootstrapAdminPassword.equals(request.getPassword())) {
             User admin = userRepository.findByEmail(request.getEmail()).orElse(null);
             if (admin != null) {
                 // If user exists, authenticate them manually (bypass password check)
-                String token = jwtUtils.generateToken(admin);
+                String token = jwtUtils.generateToken(userClaims(admin), admin);
                 return JwtResponse.builder()
                         .token(token)
                         .userId(admin.getId())
@@ -139,7 +155,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String token = jwtUtils.generateToken(user);
+        String token = jwtUtils.generateToken(userClaims(user), user);
 
         return JwtResponse.builder()
                 .token(token)

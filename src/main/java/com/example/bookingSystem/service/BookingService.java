@@ -9,6 +9,7 @@ import com.example.bookingSystem.exception.ResourceNotFoundException;
 import com.example.bookingSystem.model.entity.Booking;
 import com.example.bookingSystem.model.entity.Event;
 import com.example.bookingSystem.model.entity.User;
+import com.example.bookingSystem.model.enums.Role;
 import com.example.bookingSystem.repository.BookingRepository;
 import com.example.bookingSystem.repository.EventRepository;
 import com.example.bookingSystem.repository.UserRepository;
@@ -74,10 +75,20 @@ public class BookingService {
     }
 
     @Transactional(readOnly = true)
-    public BookingResponse getBookingResponseById(Long id) {
-        return bookingRepository.findById(id)
-                .map(this::toResponse)
+    public BookingResponse getBookingResponseById(Long id, Long requesterUserId) {
+        Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found with id " + id));
+
+        User requester = userRepository.findById(requesterUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isOwner = booking.getUser().getId().equals(requesterUserId);
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new IllegalStateException("You are not allowed to access this booking");
+        }
+
+        return toResponse(booking);
     }
 
     @Transactional(readOnly = true)
@@ -88,12 +99,25 @@ public class BookingService {
     }
 
     @Transactional
-    public BookingResponse cancelBooking(Long bookingId) {
+    public BookingResponse cancelBooking(Long bookingId, Long requesterUserId) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
 
+        User requester = userRepository.findById(requesterUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isOwner = booking.getUser().getId().equals(requesterUserId);
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new IllegalStateException("You are not allowed to cancel this booking");
+        }
+
         if (!"confirmed".equals(booking.getStatus())) {
             throw new IllegalStateException("Only confirmed bookings can be cancelled");
+        }
+
+        if (!canCancelBooking(booking)) {
+            throw new IllegalStateException("Cancellations must be made at least 24 hours before the event");
         }
 
         booking.setStatus("cancelled");
@@ -106,6 +130,29 @@ public class BookingService {
         eventRepository.save(event);
 
         return toResponse(booking);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean canCancelBooking(Long bookingId, Long requesterUserId) {
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Booking not found"));
+
+        User requester = userRepository.findById(requesterUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        boolean isOwner = booking.getUser().getId().equals(requesterUserId);
+        boolean isAdmin = requester.getRole() == Role.ADMIN;
+        if (!isOwner && !isAdmin) {
+            throw new IllegalStateException("You are not allowed to access this booking");
+        }
+
+        return "confirmed".equals(booking.getStatus()) && canCancelBooking(booking);
+    }
+
+    private boolean canCancelBooking(Booking booking) {
+        LocalDateTime eventDateTime = booking.getEvent().getDate();
+        LocalDateTime cutoff = eventDateTime.minusHours(24);
+        return LocalDateTime.now().isBefore(cutoff);
     }
 
     public Map<String, Object> getStats() {

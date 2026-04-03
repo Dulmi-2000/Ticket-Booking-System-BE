@@ -5,7 +5,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -47,6 +46,15 @@ public class Event {
     private String imageUrl;
 
     private String category;
+
+    @ElementCollection
+    @CollectionTable(name = "event_included_items", joinColumns = @JoinColumn(name = "event_id"))
+    @Column(name = "item")
+    private List<String> includedItems;
+
+    private String cancellationPolicy;
+
+    private String refundPolicy;
 
     @Column(nullable = false)
     @Builder.Default

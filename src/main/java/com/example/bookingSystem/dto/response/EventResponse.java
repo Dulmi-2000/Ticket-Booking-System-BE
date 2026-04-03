@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -25,6 +26,9 @@ public class EventResponse {
     private Integer availableTickets;
     private String imageUrl;
     private String category;
+    private List<String> includedItems;
+    private String cancellationPolicy;
+    private String refundPolicy;
     private Boolean isFeatured;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
