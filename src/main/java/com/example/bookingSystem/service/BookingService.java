@@ -16,7 +16,11 @@ import com.example.bookingSystem.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -150,9 +154,28 @@ public class BookingService {
     }
 
     private boolean canCancelBooking(Booking booking) {
-        LocalDateTime eventDateTime = booking.getEvent().getDate();
+        Event event = booking.getEvent();
+        LocalDate day = event.getDate();
+        LocalTime time = parseEventTime(event.getTime());
+        LocalDateTime eventDateTime = LocalDateTime.of(day, time);
         LocalDateTime cutoff = eventDateTime.minusHours(24);
         return LocalDateTime.now().isBefore(cutoff);
+    }
+
+    /** Parses stored time (e.g. "21:13"); defaults to start of day if missing or invalid. */
+    private static LocalTime parseEventTime(String time) {
+        if (time == null || time.isBlank()) {
+            return LocalTime.MIDNIGHT;
+        }
+        String t = time.trim();
+        try {
+            if (t.length() <= 5) {
+                return LocalTime.parse(t, DateTimeFormatter.ofPattern("H:mm"));
+            }
+            return LocalTime.parse(t);
+        } catch (DateTimeParseException e) {
+            return LocalTime.MIDNIGHT;
+        }
     }
 
     public Map<String, Object> getStats() {
